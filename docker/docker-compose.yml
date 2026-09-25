@@ -1,0 +1,50 @@
+# =====================================================================
+# 一键启动：推荐服务 + Redis
+#
+#   cd docker && docker compose up --build
+#
+# 启动后：
+#   推荐接口  http://127.0.0.1:8000/recommend
+#   接口文档  http://127.0.0.1:8000/docs
+#   健康检查  http://127.0.0.1:8000/health
+#
+# 前置条件：宿主机上已经跑过「数据生成 -> 特征工程 -> 模型训练」，
+#           data/ 与 artifacts/ 里有产物（下面通过卷挂载进容器）。
+# =====================================================================
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: recsys-redis
+    command: ["redis-server", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: mmoe-recsys:latest
+    container_name: recsys-api
+    ports:
+      - "8000:8000"
+    environment:
+      # 配了 REDIS_URL，服务会自动从「内存缓存」切换到真实 Redis
+      REDIS_URL: redis://redis:6379/0
+      TORCH_NUM_THREADS: "1"
+      API_HOST: 0.0.0.0
+      API_PORT: "8000"
+      LOG_LEVEL: INFO
+    volumes:
+      # 数据与模型产物体积大且随训练变化，不打进镜像，改为挂载
+      - ../data:/app/data
+      - ../artifacts:/app/artifacts
+      - ../configs:/app/configs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped

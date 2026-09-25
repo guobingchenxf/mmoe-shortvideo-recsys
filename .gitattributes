@@ -1,0 +1,35 @@
+# =====================================================================
+# 换行符统一
+# Windows 上 core.autocrlf=true 会把文本文件按 CRLF 检出，
+# 导致 .sh 脚本在 Linux / Docker 容器中因 CRLF 而无法执行（报 "\r: command not found"）。
+# 这里显式声明行尾风格，保证跨平台一致。
+# =====================================================================
+* text=auto
+
+# 源码与配置：统一以 LF 存储
+*.py      text eol=lf
+*.sh      text eol=lf
+*.md      text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+*.json    text eol=lf
+*.txt     text eol=lf
+*.example text eol=lf
+*.gitignore    text eol=lf
+*.gitattributes text eol=lf
+*.dockerignore text eol=lf
+
+# Windows 批处理必须是 CRLF
+*.bat     text eol=crlf
+
+# Dockerfile 无扩展名，单独声明
+Dockerfile text eol=lf
+
+# 二进制文件不做任何行尾转换
+*.parquet binary
+*.pt      binary
+*.npy     binary
+*.pkl     binary
+*.png     binary
+*.jpg     binary
+*.ico     binary

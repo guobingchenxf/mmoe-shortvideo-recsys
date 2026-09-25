@@ -1,0 +1,61 @@
+# =====================================================================
+# 全局配置：基于 MMoE 的实时短视频推荐引擎
+# 说明：所有路径均为「相对项目根目录」的相对路径，由 recsys/config.py 统一解析。
+# =====================================================================
+
+project:
+  name: mmoe-shortvideo-recsys
+  seed: 42                          # 全局随机种子，保证数据生成与训练可复现
+
+paths:
+  data_raw: data/raw                # 原始模拟日志（CSV）
+  data_processed: data/processed    # 特征工程产物（Parquet）
+  model_dir: artifacts/models       # 模型权重、编码器、特征字典
+  log_dir: artifacts/logs           # 训练日志
+
+data:
+  n_users: 5000                     # 模拟用户数
+  n_videos: 20000                   # 模拟视频数
+  n_interactions: 300000            # 曝光样本数（>= 10 万；实测 12 万时模型 1 个 epoch 即过拟合，故上调）
+  n_topics: 8                       # 隐兴趣主题维度（生成数据所用的隐因子）
+  n_categories: 20                  # 视频一级分类数
+  n_authors: 2000                   # 创作者数量
+  n_days: 30                        # 日志覆盖天数（后续按时间切分训练/验证集）
+
+  # ---- 标签分布目标（生成时做「截距校准」，可精确命中）----
+  target_ctr: 0.05                  # 点击率 ≈ 5%
+  target_like_rate: 0.01            # 点赞率 ≈ 1%（针对全部曝光）
+
+  # ---- 完播率：用 Beta 分布模拟长尾 ----
+  watch_beta_concentration: 2.0     # 集中度越小 => 分布越两极分化（越"长尾"）
+
+  max_seq_len: 50                   # 用户行为序列最大长度（Step 2 序列特征使用）
+
+features:
+  hash_bucket_size: 100000          # 稀疏特征哈希编码桶数
+  max_genre_len: 5                  # 多值特征（如视频标签）最多保留的元素个数
+
+model:
+  embedding_dim: 8                  # 稀疏特征 Embedding 维度（参数量与训练样本量的权衡）
+  sparse_embeddings: true           # Embedding 使用稀疏梯度 + SparseAdam（大规模稀疏特征的标准做法，显著提速）
+  embedding_lr: 0.005               # Embedding 单独的学习率：稀疏行被更新的次数远少于稠密层，需要更大步长
+  shared_bottom_hidden: [256]       # 共享底层（Shared Bottom）隐藏层结构
+  num_experts: 8                    # MMoE 专家网络个数
+  expert_hidden: [128, 64]          # 每个专家的隐藏层结构
+  gate_hidden: []                   # 门控网络隐藏层（空 = 单层线性门控，即原论文做法）
+  tower_hidden: [64, 32]            # 每个任务塔（Tower）的隐藏层结构
+  dropout: 0.25
+  lr: 0.001
+  batch_size: 2048
+  epochs: 8
+  patience: 3                       # EarlyStopping 耐心值
+  weight_decay: 0.00001
+  use_uncertainty_weighting: true   # 多任务损失是否使用不确定性加权（自动学习任务权重）
+
+service:
+  host: 0.0.0.0
+  port: 8000
+  top_k: 10                         # 接口返回的推荐条数
+  recall_size: 300                  # 召回候选集大小（送入精排）：兼顾效果与延时，实测 300 条时推理 <50ms
+  redis_url: ""                     # 留空 => 使用进程内内存缓存（自动降级）
+  cache_ttl: 3600                   # 用户行为序列缓存过期时间（秒）

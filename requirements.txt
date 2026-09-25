@@ -1,0 +1,36 @@
+# =====================================================================
+# Requirements -- MMoE-based Real-time Short-Video Recommendation Engine
+# =====================================================================
+# NOTE: this venv is created with --system-site-packages, so the global
+#       torch 2.0.1+cpu is reused (~200MB download saved).
+#       To rebuild on a fresh machine, install PyTorch (CPU) first:
+#         pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+#
+# NOTE: keep this file ASCII-only. pip on Windows decodes it with the
+#       system locale codec (GBK here), so non-ASCII comments break it.
+# =====================================================================
+
+# ---------- Numerical (IMPORTANT: pin numpy<2) ----------
+# Global numpy 2.2.3 is ABI-incompatible with scipy / scikit-learn / pandas
+# and makes `import` fail (_ARRAY_API not found). Pin to 1.x.
+numpy>=1.24,<2
+
+# ---------- Data processing ----------
+pandas>=2.0,<2.3
+pyarrow>=14.0            # parquet engine
+
+# ---------- Online serving ----------
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.5
+
+# ---------- Cache (user behaviour sequence) ----------
+redis>=5.0
+
+# ---------- Config & utils ----------
+PyYAML>=6.0
+tqdm>=4.66
+
+# ---------- Testing ----------
+pytest>=7.4
+httpx>=0.27              # required by FastAPI TestClient

@@ -1,0 +1,24 @@
+# 构建上下文瘦身：这些内容既不需要进镜像，也会拖慢构建
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+.git/
+.gitignore
+
+# 数据与产物通过卷挂载，不进镜像
+data/raw/*
+data/processed/*
+artifacts/*
+
+# 文档与脚本无需进运行时镜像
+docs/
+scripts/
+docker/
+*.md
+!README.md
+
+.env
