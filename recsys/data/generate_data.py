@@ -54,22 +54,7 @@ def calibrate_intercept(
     tol: float = 1e-6,
     max_iter: int = 200,
 ) -> float:
-    """二分法求偏置 b，使加权正例比例精确等于 target_rate。
-
-    为什么需要它：sigmoid(logits) 的均值由 logits 的分布决定，随手设一个截距
-    很难命中 5% / 1% 这种精确目标。二分法单调、稳定，200 次迭代足够收敛到 1e-6。
-
-    Args:
-        logits: 未加截距的 logit 数组。
-        target_rate: 目标正例率，如 0.05。
-        weights: 每个样本的计数权重（如 click 向量，用于计算"全曝光口径"的点赞率）。
-                 None 表示全 1。
-        tol: 收敛容差。
-        max_iter: 最大迭代次数。
-
-    Returns:
-        标量偏置 b。
-    """
+    
     lo, hi = -30.0, 30.0
     for _ in range(max_iter):
         mid = (lo + hi) / 2.0
