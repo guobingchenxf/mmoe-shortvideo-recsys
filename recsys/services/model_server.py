@@ -1,9 +1,6 @@
 """模型服务：加载自包含模型包，提供特征编码、批量打分与预热。
 
-为什么把「特征编码」也放在这里，而不是散落在业务代码里：
-线上和线下必须用**同一份 FeatureSchema** 做编码（哈希桶数、序列长度、归一化统计量
-全部来自训练时保存的 bundle）。把它收敛到 ModelServer 一个地方，
-就能从机制上杜绝最难排查的一类线上事故 —— Training-Serving Skew（训练/服务特征不一致）。
+
 """
 
 from __future__ import annotations
@@ -113,11 +110,6 @@ class ModelServer:
         ]
 
     def warmup(self, n: int = 8) -> float:
-        """预热：先跑一次前向，避免第一个真实请求承担算子初始化/内存分配开销。
-
-        线上服务发布后如果不预热，首个请求延时可能是稳态的几十倍，
-        在按 P99 考核的推荐接口里是必须做的一步。
-        """
         dummy: List[Dict[str, Any]] = []
         for _ in range(n):
             f: Dict[str, Any] = {name: 0.0 for name in self.dense_feature_names}
