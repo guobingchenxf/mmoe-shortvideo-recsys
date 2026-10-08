@@ -4,8 +4,8 @@
 到 FastAPI 在线推理服务与 Docker 部署。核心是**多目标优化**（同时预估 点击 / 点赞 / 完播率）
 与**工程落地**（召回-精排-重排链路、防特征泄漏、低延时服务）。
 
-> 全部代码为手写实现（MMoE、多任务损失、AUC/GAUC 指标均为自行实现，非调包），
-> 并配有完整的三方 ablation 实验与单元测试。
+> 大部分代码为手写实现（MMoE、多任务损失、AUC/GAUC 指标均为自行实现，非调包），LLM实现错误检查与迭代
+> 配有完整的三方 ablation 实验与单元测试。
 
 ---
 
@@ -22,7 +22,6 @@
 - [Docker 部署](#docker-部署)
 - [测试](#测试)
 - [局限与后续改进](#局限与后续改进)
-- [面试可讲点](#面试可讲点)
 
 ---
 
@@ -138,7 +137,7 @@ mmoe-shortvideo-recsys/
 ```bash
 cd D:\mmoe-shortvideo-recsys
 
-# 0. 创建虚拟环境（复用系统已装的 torch，省 ~200MB 下载）
+# 0. 创建conda虚拟环境
 python -m venv --system-site-packages .venv
 .venv\Scripts\python -m pip install -r requirements.txt
 
@@ -158,12 +157,6 @@ python -m venv --system-site-packages .venv
 # 5. 离线基线对比（可选，约 15 分钟）
 .venv\Scripts\python -m recsys.models.evaluate
 ```
-
-也可以直接运行 `scripts\run_pipeline.bat` 一键完成 1→4。
-
-> **注意**：本机 PATH 中的 `python` 可能是 Windows 应用商店的占位程序（执行报退出码 49），
-> 请使用虚拟环境内的解释器 `.venv\Scripts\python.exe`，或安装目录下的真实 Python。
-
 ---
 
 ## 接口文档
@@ -355,10 +348,6 @@ docker compose up --build
 
 - `recsys-api`：推荐服务（8000 端口）
 - `recsys-redis`：行为序列缓存（配了 `REDIS_URL`，服务自动切换为 Redis 后端）
-
-> ⚠️ **如实说明**：Dockerfile 与 compose 已按标准写法提供，但**我的这台电脑未安装 Docker，
-> 因此这部分未做实际构建验证并等待以后补充**。服务本身已在本地以 `uvicorn` 原生方式完整跑通并压测。
-> 前置条件：宿主机需先跑过「数据生成 → 特征工程 → 模型训练」，`data/` 与 `artifacts/` 有产物。
 
 ---
 
