@@ -1,11 +1,5 @@
 """MMoE 训练流程：训练循环 + 验证指标 + EarlyStopping + 模型打包保存。
 
-设计要点：
-1. 训练/评估逻辑写成通用的 train_model()，MMoE 与单任务基线共用，
-   保证对比实验在完全相同的训练配置下进行；
-2. 保存的不是"裸 state_dict"，而是一个自包含的 bundle
-   （模型权重 + 特征声明 + 归一化统计量 + 建模参数），
-   这样 Step 4 的在线服务只需加载一个文件就能复现完全一致的特征口径。
 """
 
 from __future__ import annotations
