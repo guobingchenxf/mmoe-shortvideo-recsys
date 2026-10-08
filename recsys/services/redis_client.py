@@ -1,17 +1,6 @@
 """用户行为序列缓存客户端：统一接口 + 内存降级。
 
-=====================================================================
-【为什么要有这一层抽象】
-=====================================================================
-线上推荐服务需要低延时读取用户"最近行为序列"（用于兴趣建模），
-生产环境一般用 Redis。但本项目的目标是"没装 Redis 也能一键跑通全套流程"，
-所以这里定义同一个 CacheClient 接口，提供两种实现：
 
-    RedisCacheClient     设置 REDIS_URL 时启用（生产）
-    InMemoryCacheClient  默认（本地开发 / 无 Redis 环境）
-
-好处：业务代码只依赖抽象接口，切换后端不需要改一行业务逻辑——
-这也是"依赖倒置"在工程里的典型用法。
 """
 
 from __future__ import annotations
@@ -103,13 +92,13 @@ class RedisCacheClient(CacheClient):
 
 
 def build_cache(redis_url: str = "", ttl: int = 3600) -> CacheClient:
-    """根据配置构造缓存客户端；Redis 不可用时自动降级为内存实现。"""
+    """根据配置构造缓存客户端"""
     if redis_url:
         try:
             client = RedisCacheClient(redis_url, ttl)
             logger.info("缓存后端: Redis (%s)", redis_url)
             return client
-        except Exception as e:  # 连接失败不应导致服务起不来
+        except Exception as e:  
             logger.warning("连接 Redis 失败(%s)，自动降级为进程内内存缓存", e)
     logger.info("缓存后端: 进程内内存（未配置 REDIS_URL）")
     return InMemoryCacheClient()
