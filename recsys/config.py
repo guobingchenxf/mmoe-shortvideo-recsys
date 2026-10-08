@@ -1,9 +1,6 @@
 """配置加载器：把 configs/config.yaml 解析为强类型 dataclass。
 
-为什么用 dataclass 而不是裸 dict：
-- `cfg.model.num_experts` 写错会立刻抛 AttributeError，而 `cfg["model"]["num_experts"]`
-  写错只会 KeyError，且 IDE 无法补全、无法跳转，维护成本高；
-- 各模块只需 import 一个 Config 类型，接口更清晰。
+
 """
 
 from __future__ import annotations
