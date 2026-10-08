@@ -1,11 +1,6 @@
 """在线服务接口测试。
 
-依赖已训练好的模型与特征数据，因此整组测试会在缺少产物时整体跳过：
-    python -m recsys.models.train        # 先生成模型
-    pytest tests/test_service.py -v
 
-注意：TestClient 会触发 FastAPI 的 lifespan，即真实加载模型 + 物料库 + 用户画像
-（本机约 30~60 秒），因此这组测试相对较慢。
 """
 
 from __future__ import annotations
