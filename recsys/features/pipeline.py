@@ -1,30 +1,5 @@
 """离线特征工程流水线（Step 2）。
 
-    raw CSV ──► 特征构造 ──► 时间切分 ──► 训练集拟合归一化 ──► parquet + 特征spec
-
-=====================================================================
-【三条铁律：也是推荐系统面试的高频考点】
-=====================================================================
-1) 无标签泄漏（Label Leakage）
-   所有"历史统计"与"行为序列"特征，只使用当前样本时刻**之前**发生的数据。
-   例如"用户历史点击率"必须排除当前这条样本本身的点击结果。
-
-2) 无统计量泄漏（Statistics Leakage）
-   归一化的 mean/std 只在训练集上 fit，再 transform 验证集。
-   用全量数据 fit 会让验证集信息回流到训练，离线指标虚高、上线掉点。
-
-3) 时间切分（Temporal Split）
-   按时间先后切分，而非随机切分。线上永远是"用过去预测未来"，
-   随机切分会让模型"偷看未来"，离线 AUC 会明显虚高。
-
-产物：
-    data/processed/train.parquet      训练集特征
-    data/processed/valid.parquet      验证集特征
-    data/processed/feature_spec.json  特征声明（Step 3/4 复用，保证线上线下一致）
-    data/processed/dense_norm.json    dense 标准化统计量（仅由训练集拟合）
-
-用法：
-    python -m recsys.features.pipeline
 """
 
 from __future__ import annotations
