@@ -21,7 +21,7 @@ from recsys.features.preprocess import DenseProcessor
 
 @dataclass
 class RecTensors:
-    """一份数据集对应的全部特征张量（全部驻留内存，本项目规模下完全可行）。"""
+    """一份数据集对应的全部特征张量。"""
 
     dense: torch.Tensor                          # (N, D) float32
     sparse: Dict[str, torch.Tensor]              # name -> (N,) int64
