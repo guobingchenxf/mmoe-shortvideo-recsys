@@ -1,9 +1,5 @@
 """在线服务的请求/响应契约（Pydantic 模型）。
 
-用 Pydantic 定义接口契约的好处：
-- 自动做请求体校验与类型转换，非法入参直接返回 422，不用手写 if-else；
-- 自动生成 OpenAPI 文档（FastAPI 的 /docs 可直接调试）；
-- 出参有明确 schema，前后端/上下游联调时不会扯皮。
 """
 
 from __future__ import annotations
