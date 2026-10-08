@@ -6,12 +6,12 @@ __pycache__/
 .mypy_cache/
 .ipynb_checkpoints/
 
-# ---------- 虚拟环境 ----------
+# ---------- conda ----------
 .venv/
 venv/
 env/
 
-# ---------- 数据与产物（体积大，不入库）----------
+# ---------- 数据与产物----------
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
@@ -20,8 +20,8 @@ data/processed/*
 artifacts/*
 !artifacts/.gitkeep
 
-# ---------- 环境变量（含密钥，禁止入库）----------
-.env
+# ---------- 环境变量----------
+
 
 # ---------- IDE / 系统 ----------
 .idea/
