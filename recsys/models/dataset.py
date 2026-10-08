@@ -1,7 +1,6 @@
 """把特征 parquet 转换成 PyTorch 张量，并封装为 Dataset / DataLoader。
 
-效率设计：不在 __getitem__ 里逐样本做 Python 级别的字典拼装（那样 10 万样本会慢一个量级），
-而是让 Dataset 只返回行号，真正的批量拼装交给 collate_fn 在张量层面用花式索引一次完成。
+
 """
 
 from __future__ import annotations
