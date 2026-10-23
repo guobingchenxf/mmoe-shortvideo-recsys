@@ -288,7 +288,7 @@ batch 2048，Adam(lr=1e-3) + SparseAdam(embedding_lr=5e-3)，dropout 0.25，Earl
 
 目标「单次推理 < 50ms」在 P95 上达成。
 
-### 线程数对延时的影响（重要）
+### 线程数对延时的影响
 
 | `TORCH_NUM_THREADS` | P50 | max |
 |---|---|---|
