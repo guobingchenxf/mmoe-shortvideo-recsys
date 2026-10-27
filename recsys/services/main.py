@@ -36,6 +36,7 @@ if __package__ in (None, ""):
 
 from recsys.config import Config, load_config
 from recsys.models.train import MODEL_FILE
+from recsys.services.hot_reload import RecommenderHolder, install_reload_routes
 from recsys.services.model_server import ModelServer
 from recsys.services.ranking import Recommender
 from recsys.services.redis_client import build_cache
@@ -74,13 +75,22 @@ def build_recommender(cfg: Config) -> Recommender:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期：启动时加载一次模型与物料，进程内常驻复用。"""
+    """应用生命周期：启动时加载一次模型与物料，进程内常驻复用。
+
+    实例交给 RecommenderHolder 保管：业务代码通过 `acquire()` 取用，
+    热加载时由 holder 做双缓冲原子替换，在途请求不会被中途换掉。
+    """
     cfg = load_config()
     app.state.cfg = cfg
-    app.state.recommender = build_recommender(cfg)
+    app.state.holder = RecommenderHolder(
+        build_recommender(cfg),
+        factory=lambda: build_recommender(cfg),
+    )
     logger.info("服务启动完成，接口文档: http://127.0.0.1:%s/docs", os.getenv("API_PORT", cfg.service.port))
     yield
-    app.state.recommender.close()
+    holder = getattr(app.state, "holder", None)
+    if holder is not None:
+        holder.current.close()
     logger.info("服务已关闭")
 
 
@@ -113,6 +123,10 @@ async def access_log(request: Request, call_next):
     return response
 
 
+# 管理接口：POST /admin/reload 热加载模型（需配置 RELOAD_TOKEN，否则返回 503）
+install_reload_routes(app)
+
+
 @app.get("/", summary="服务信息")
 def root() -> dict:
     return {
@@ -124,7 +138,8 @@ def root() -> dict:
 
 @app.get("/health", response_model=HealthResponse, summary="健康检查")
 def health() -> HealthResponse:
-    rec: Recommender = app.state.recommender
+    holder: RecommenderHolder = app.state.holder
+    rec: Recommender = holder.current
     return HealthResponse(
         status="ok",
         model_loaded=True,
@@ -141,9 +156,11 @@ def recommend(req: RecommendRequest) -> RecommendResponse:
 
     流程：读取用户行为序列 -> 多路召回 -> 组装特征 -> MMoE 批量打分 -> 融合排序。
     """
-    rec: Recommender = app.state.recommender
+    holder: RecommenderHolder = app.state.holder
     try:
-        result = rec.recommend(req.user_id, req.context_features, req.top_k)
+        # 借出当前实例：整段推理期间它不会被热加载释放
+        with holder.acquire() as rec:
+            result = rec.recommend(req.user_id, req.context_features, req.top_k)
     except Exception as e:  # 兜底：单次请求失败不应打挂整个服务
         logger.exception("推荐失败 user_id=%s", req.user_id)
         raise HTTPException(status_code=500, detail=f"推荐失败: {e}") from e
