@@ -61,7 +61,16 @@ class RedisCacheClient(CacheClient):
     def __init__(self, url: str, default_ttl: int = 3600) -> None:
         import redis  # 延迟导入：没装 redis 客户端时也不影响内存版使用
 
-        self._client = redis.from_url(url, decode_responses=True)
+        # 显式设置超时。默认 socket_timeout=None 表示无限等待：Redis 处于
+        # "TCP 可连但不响应"的半死状态时，请求会一直挂住并逐步占满线程池，
+        # 比直接连接失败更危险。超时后异常上抛，由 build_cache 统一降级。
+        self._client = redis.from_url(
+            url,
+            decode_responses=True,
+            socket_connect_timeout=0.05,
+            socket_timeout=0.05,
+            health_check_interval=30,
+        )
         self._default_ttl = default_ttl
         # 主动 ping 一次，尽早暴露连接问题（失败会被 build_cache 捕获并降级）
         self._client.ping()
