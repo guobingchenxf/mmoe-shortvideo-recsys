@@ -22,12 +22,14 @@ from __future__ import annotations
 
 import os
 import sys
+import time
+import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import torch
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -88,6 +90,27 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def access_log(request: Request, call_next):
+    """访问日志中间件：注入 request_id，记录端到端耗时并回写到响应头。
+
+    中间件负责横切关注点（链路标识、耗时、访问日志），业务代码不用感知。
+    这里用 `async def` 而路由用 `def` 是刻意为之：中间件里只有 `await call_next`
+    这类非阻塞操作；路由里是阻塞的推理与特征计算，同步写法才会被丢到线程池执行。
+    """
+    rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+    t0 = time.perf_counter()
+    response = await call_next(request)
+    cost_ms = (time.perf_counter() - t0) * 1000.0
+    response.headers["X-Request-ID"] = rid
+    response.headers["X-Cost-Ms"] = f"{cost_ms:.1f}"
+    logger.info(
+        "rid=%s %s %s -> %d %.1fms",
+        rid, request.method, request.url.path, response.status_code, cost_ms,
+    )
+    return response
 
 
 @app.get("/", summary="服务信息")

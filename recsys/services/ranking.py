@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import math
+import random
 from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -60,6 +61,18 @@ _REASON_TEMPLATE = {
     "同类目兴趣": "你最近常看「{category}」类内容",
     "关注作者": "你互动过的创作者（{author}）有新作品",
 }
+
+
+def _jittered_ttl(base_ttl: int, spread: float = 0.1) -> int:
+    """给缓存 TTL 加随机抖动（默认 ±10%）。
+
+    若所有 key 共用同一个 TTL 且在同一批写入，它们会在同一时刻集体过期、
+    集体回源——这就是缓存雪崩的形态。抖动把过期时间打散到一段时间内。
+    base_ttl 非正时返回 0，交给调用方沿用默认 TTL。
+    """
+    if base_ttl <= 0:
+        return 0
+    return max(1, int(base_ttl * random.uniform(1.0 - spread, 1.0 + spread)))
 
 
 class Recommender:
@@ -192,9 +205,15 @@ class Recommender:
         )
 
     def _seed_cache(self) -> None:
-        """把训练期的用户行为序列写入缓存，让服务在无外部依赖时也能立刻演示。"""
+        """把训练期的用户行为序列写入缓存，让服务在无外部依赖时也能立刻演示。
+
+        TTL 逐条加抖动：这一批 key 是同时写入的，若统一过期时间，
+        它们会一起失效、一起回源，正是缓存雪崩的形态。
+        """
         for uid, items in self.user_seq.items():
-            self.cache.set_user_sequence(uid, items, ttl=self.cfg.service.cache_ttl)
+            self.cache.set_user_sequence(
+                uid, items, ttl=_jittered_ttl(self.cfg.service.cache_ttl)
+            )
         logger.info("已向缓存写入 %d 个用户的行为序列", len(self.user_seq))
 
     # ==================================================================
